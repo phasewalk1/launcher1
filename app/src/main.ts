@@ -1,10 +1,15 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, protocol } from "electron";
 import * as path from "path";
 import axios from "axios";
 
+const steamProtocol = "steam-auth-protocol";
+app.setAsDefaultProtocolClient(steamProtocol);
+
+let mainWindow: BrowserWindow | null = null;
+
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -40,13 +45,13 @@ function createWindow() {
       authWindow.show();
 
       authWindow.webContents.on("will-navigate", (event, url) => {
-        if (url.startsWith("your-custom-protocol://")) {
+        if (url.startsWith("steam-auth-protocol://")) {
           console.log("Received URL:", url);
           const urlObj = new URL(url);
           const steamId = urlObj.searchParams.get("steamId");
 
           if (steamId) {
-            mainWindow.webContents.send("steam-login-success", steamId);
+            mainWindow?.webContents.send("steam-login-success", steamId);
           }
           authWindow.close();
         }
@@ -61,13 +66,20 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  createWindow();
+  protocol.handle(steamProtocol, (request) => {
+    const url = new URL(request.url);
+    const steamId = url.searchParams.get("steamId");
 
-  app.on("activate", function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (steamId) {
+      mainWindow?.webContents.send("steam-login-success", steamId);
+    }
+
+    return new Response("Login Successful", {
+      headers: { "Content-Type": "text/plain" },
+    });
   });
+
+  createWindow();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -77,4 +89,5 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+  mainWindow = null;
 });

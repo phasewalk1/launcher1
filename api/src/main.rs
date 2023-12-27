@@ -43,7 +43,7 @@ async fn steam_callback(req: Query<SteamLoginData>) -> Result<HttpResponse, acti
             log::info!("Steam login successful!");
             log::debug!("Steam id: {}", steam_id);
             let redirect_url = format!(
-                "your-custom-protocol://localhost:3000/steam/login-success?steamId={}",
+                "steam-auth-protocol://steam/login-success?steamId={}",
                 steam_id
             );
             return Ok(HttpResponse::Found()
