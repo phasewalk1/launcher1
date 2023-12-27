@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    // Your compiler options...
+    "outDir": "./dist"
+  },
+  "include": ["src/preload.ts"]
+}

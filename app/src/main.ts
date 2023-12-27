@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, protocol } from "electron";
+import { format as urlFormat } from "url";
 import * as path from "path";
 import axios from "axios";
 
@@ -13,14 +14,32 @@ function createWindow() {
     height: 600,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
     },
     width: 800,
   });
 
-  // and load the index.html of the app.
-  mainWindow.loadFile(path.join(__dirname, "../index.html"));
+  if (process.env.NODE_ENV === "development") {
+    mainWindow.loadURL("http://localhost:3000");
+  } else {
+    console.log(
+      "Loading URL:",
+      urlFormat({
+        pathname: path.join(__dirname, "../index.html"),
+        protocol: "file:",
+        slashes: true,
+      }),
+    );
+
+    mainWindow.loadURL(
+      urlFormat({
+        pathname: path.join(__dirname, "../index.html"),
+        protocol: "file:",
+        slashes: true,
+      }),
+    );
+  }
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -35,8 +54,8 @@ function createWindow() {
         height: 600,
         show: true, // Set to true to make the window visible
         webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false,
+          nodeIntegration: false,
+          contextIsolation: true,
           preload: path.join(__dirname, "preload.js"),
         },
       });
@@ -59,6 +78,10 @@ function createWindow() {
     } catch (error) {
       console.error("Failed to fetch Steam login URL:", error);
     }
+  });
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
   });
 }
 
